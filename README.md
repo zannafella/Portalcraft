@@ -135,10 +135,6 @@ press. With the option off you are Chell in both modes (her size and movement; C
 While a Minecraft screen is open (inventory, chat, chest, pause menu), everything goes to Minecraft and a cursor is
 drawn.
 
-**F3 fat-finger guard:** while F3 is held, and for half a second after you let go, F2 and F4 never reach Portal 2's
-binds (a quickload on F2, for some), in both modes. In Minecraft mode they go to Minecraft with F3 (F3+F4 is its game
-mode switcher).
-
 **Minecraft Control Takeover** (Portalcraft... > Crossovers > Controls, off by default): for people whose Portal 2 binds
 clash with Minecraft's. A key bound to one of Minecraft's other controls (a mod's zoom key, advancements on L, the
 creative hotbar keys on C and X...) goes to Minecraft in both modes, never to Portal 2's bind for the same key.
