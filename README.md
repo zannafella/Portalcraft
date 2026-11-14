@@ -1,4 +1,4 @@
-# Portalcraft: real Minecraft inside Portal 2
+# Portalcraft: Minecraft inside Portal 2
 
 Real Minecraft Java 26.3 runs next to Portal 2, follows Portal 2's camera, and is drawn into every Portal 2 frame with
 depth: Minecraft blocks and mobs stand on Portal 2's floors, hide behind its walls and stay put while you move. Build
