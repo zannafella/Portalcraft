@@ -72,6 +72,14 @@ function Get-LinkHostPid {
 # Things on this PC that keep Portal 2 from loading ReShade (and so Portalcraft), checked before starting. Returns
 # whether Portal 2 will run on Vulkan (-vulkan in its Steam launch options, which Steam adds to every launch).
 function Test-Portal2Setup([string] $p2dir) {
+	# Portalcraft's add-on, which ReShade loads from runtime\: an antivirus can take it (Windows Defender, for a file
+	# that's in use, finishes removing it on the next restart - after a session that worked)
+	$addonFile = Join-Path $Root 'runtime\portalcraft.addon32'
+	if (-not (Test-Path $addonFile)) {
+		throw ("Portalcraft's add-on (runtime\portalcraft.addon32) is missing from this folder, so Portal 2 would start " +
+			"without it: an antivirus most likely removed it. Restore it from the antivirus' quarantine (Windows Defender: " +
+			"Windows Security > Virus & threat protection > Protection history) and allow it, or unzip Portalcraft again.")
+	}
 	$opts = (& $Tool launch-options | Out-String).Trim()
 	Write-Host "Portal 2: $p2dir (launch options in Steam: $(if ($opts) { $opts } else { 'none' }))"
 	$vulkan = $opts -match '(^|\s)-vulkan(\s|$)'
@@ -96,6 +104,10 @@ function Show-AddonDiagnosis([string] $p2dir, [datetime] $since, [bool] $vulkan)
 	Write-Host ''
 	Write-Host "Portalcraft didn't come on in Portal 2 (its add-on never connected to Minecraft)." -ForegroundColor Yellow
 	if ((Get-SmartAppControl) -eq 1) { Write-Host "  $SmartAppControlText" -ForegroundColor Yellow }
+	elseif (-not (Test-Path (Join-Path $Root 'runtime\portalcraft.addon32'))) {
+		Write-Host ("  Portalcraft's add-on (runtime\portalcraft.addon32) is gone: an antivirus most likely removed it. " +
+			"Restore it from the antivirus' quarantine and allow it, then play again.") -ForegroundColor Yellow
+	}
 	elseif (-not (Test-Path (Join-Path $p2dir $dll))) {
 		Write-Host ("  Portal 2's $dll (ReShade, put there by Portalcraft) is gone: an antivirus most likely removed it. " +
 			"Restore it from the antivirus' quarantine and allow it, then play again.") -ForegroundColor Yellow
@@ -167,7 +179,7 @@ function Main {
 			Write-Host '(This window keeps waiting: you can start Minecraft from any launcher with the Portalcraft mod.)'
 			if (-not (Wait-Minecraft 15)) { throw 'Minecraft with Portalcraft did not start within 15 minutes.' }
 		}
-		Write-Host 'Minecraft is ready. Starting Portal 2...'
+		Write-Host 'Minecraft is up (it waits at its title screen and opens its world once Portal 2 runs). Starting Portal 2...'
 
 		# (named: splatting an array would pass '-Windowed' along as plain text)
 		$portalArgs = @{}

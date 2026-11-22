@@ -25,49 +25,55 @@ sampler sMine { Texture = PcMineTex; MinFilter = POINT; MagFilter = POINT; MipFi
 sampler sBoo { Texture = PcBooTex; AddressU = CLAMP; AddressV = CLAMP; };
 
 // ---- set by the add-on ----
+// (In shader model 3 ReShade binds every number to a constant register of its own, at its place in the uniforms: a float3
+// leaves one unused after it, which the single numbers below fill. 216 in all, as many as before the portals came in:
+// at 224 (the hardware's count) the effect still compiled, but drew with its numbers in the wrong places.)
 uniform bool PcActive = false;
 uniform bool PcOverlay = true;
 // the hand and HUD already went in under Portal 2's 2D pass (PcOverlay is false then)
 uniform bool PcOverlayEarly = false;
+// how many of PcLightPos are set
+uniform int PcLightCount = 0;
 // Hallow's Eve, the frame playing: x 1 while one plays, y the frame, zw the atlas's columns and rows; the frames' part of
 // the clip's picture (u0, v0, u1, v1); a frame's size in texels and the clip's aspect (the picture fits the screen)
 uniform float4 PcBoo = float4(0.0, 0.0, 1.0, 1.0);
 uniform float4 PcBooCrop = float4(0.0, 0.0, 1.0, 1.0);
 uniform float3 PcBooFrame = float3(1.0, 1.0, 1.7777778);
+// how many of PcFieldC/H are set
+uniform int PcFieldCount = 0;
 // Portal 2's screen fade this frame (env_fade, deaths, level ends): colour and strength, and a multiplying fade's colour -
 // the hand and HUD take it too (Portal 2 faded its own picture before this)
 uniform float4 PcFade = float4(0.0, 0.0, 0.0, 0.0);
 uniform float3 PcFadeMul = float3(1.0, 1.0, 1.0);
+uniform int PcMineCount = 0;
 // Minecraft's light sources near the player (torches, lava...), in Portal 2's camera space (x right, y up, z back):
 // position, and in w its reach (units: light level x 32) + 1000 x its colour (light_colour) - Portal 2's lighting is
-// baked, so this lights its surfaces around them. (One array: in shader model 3 ReShade gives every array element four
-// constant registers and every other value one, of 224.)
+// baked, so this lights its surfaces around them.
 uniform float4 PcLightPos[12];
-uniform int PcLightCount = 0;
 // emancipation grills and laser fields placed from Minecraft (no brush for Portal 2 to draw them from): axis-aligned boxes
 // in world axes, centre relative to the camera (w: 0 grill, 1 laser field) and half sizes - the field is the plane across
 // the box's thin side; and the camera's axes in world space
 uniform float4 PcFieldC[8];
 uniform float4 PcFieldH[8];
-uniform int PcFieldCount = 0;
-uniform int PcMineCount = 0;
 uniform float3 PcMineEye = float3(0.0, 0.0, 0.0);
-uniform float3 PcCamR = float3(0.0, -1.0, 0.0);
-uniform float3 PcCamU = float3(0.0, 0.0, 1.0);
-uniform float3 PcCamF = float3(1.0, 0.0, 0.0);
 uniform float PcTimer < source = "timer"; >;
+uniform float3 PcCamR = float3(0.0, -1.0, 0.0);
 // the add-on drew Minecraft's opaque pixels inside Portal 2's frame (PortalcraftEarly.hlsl): only translucent ones here
 uniform bool PcEarly = false;
+uniform float3 PcCamU = float3(0.0, 0.0, 1.0);
 // the add-on drew the dug holes into Portal 2's frame itself (before its models, beams and captions): nothing to do here
 uniform bool PcHoleDone = false;
+uniform float3 PcCamF = float3(1.0, 0.0, 0.0);
 // sODepth holds Minecraft's solid-only depth this frame
 uniform bool PcOpaqueDepth = false;
-// Portal 2 is in sp_mc_overworld: Minecraft's own world, its own light and sky
-uniform bool PcSurface = false;
 // Portal 2's camera near/far (units)
 uniform float2 PcHostPlanes = float2(7.0, 28400.0);
+// the second open portal's facing, y and z (PcPortalsA..C below)
+uniform float2 PcPortalsD = float2(0.0, 0.0);
 // Minecraft's near, far (units) and flags (1: depth in [0,1], 2: rows bottom-up, 4: reversed Z)
 uniform float3 PcMcPlanes = float3(1.6, 32768.0, 7.0);
+// Portal 2 is in sp_mc_overworld: Minecraft's own world, its own light and sky
+uniform bool PcSurface = false;
 // rows of R_mc^T R_host: a Portal 2 camera-space vector in Minecraft's camera space (x right, y up, -z forward)
 uniform float3 PcWarpRow0 = float3(1.0, 0.0, 0.0);
 uniform float3 PcWarpRow1 = float3(0.0, 1.0, 0.0);
@@ -80,6 +86,11 @@ uniform float3 PcWarpTan = float3(0.75, 0.81, 1.7778);
 uniform float3 PcCursor = float3(0.5, 0.5, 0.0);
 // the fluid fog Minecraft's camera is in (water, lava, powder snow): start, end (units along the view), 1 when on
 uniform float3 PcFog = float3(0.0, 1.0, 0.0);
+// the open portals, packed: per portal its centre (units from the camera, Source axes), facing (0 when closed) and the
+// angle of its up around the facing (portal_up)
+uniform float4 PcPortalsA = float4(0.0, 0.0, 0.0, 0.0); // c0.xyz, up angle 0
+uniform float4 PcPortalsB = float4(0.0, 0.0, 0.0, 0.0); // f0.xyz, up angle 1
+uniform float4 PcPortalsC = float4(0.0, 0.0, 0.0, 0.0); // c1.xyz, f1.x
 uniform float3 PcFogColor = float3(0.0, 0.0, 0.0);
 
 // ---- tweakables ----
@@ -286,6 +297,32 @@ float4 PS_Light(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target
 	return float4(c, 1.0);
 }
 
+// how far along the view (units of view depth, the ray's direction per unit wd) this ray meets an open portal from its
+// front, rim glow included - 1e9 if it doesn't
+float portal_hit1(float3 wd, float3 c, float3 f, float3 u)
+{
+	const float den = dot(f, wd);
+	if (den > -1e-4) // (closed: f is 0)
+		return 1e9;
+	const float t = dot(f, c) / den;
+	const float3 d = wd * t - c;
+	const float a = dot(d, cross(f, u)) / 32.0, b = dot(d, u) / 56.0;
+	return t > 0.0 && a * a + b * b <= 1.0 ? t : 1e9;
+}
+
+// a portal's up from its facing and the angle around it (compositor.cpp set_portals: the same basis)
+float3 portal_up(float3 f, float angle)
+{
+	const float3 e1 = normalize((abs(f.z) < 0.9 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0)) - f * (abs(f.z) < 0.9 ? f.z : f.x));
+	return cos(angle) * e1 + sin(angle) * cross(f, e1);
+}
+
+float portal_hit(float3 wd)
+{
+	const float3 f0 = PcPortalsB.xyz, f1 = float3(PcPortalsC.w, PcPortalsD.xy);
+	return min(portal_hit1(wd, PcPortalsA.xyz, f0, portal_up(f0, PcPortalsA.w)), portal_hit1(wd, PcPortalsC.xyz, f1, portal_up(f1, PcPortalsB.w)));
+}
+
 float4 PS_Composite(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target
 {
 	float3 host = tex2D(ReShade::BackBuffer, uv).rgb;
@@ -402,12 +439,16 @@ float4 PS_Composite(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target
 	if (DebugView == 0)
 		host = mc_fields(host, ray, zh);
 	// a Portal 2 surface between Minecraft's water (glass) and the solid thing Minecraft has behind it: the early
-	// composite left the surface in front (PortalcraftEarly.hlsl) - it shows under the water's tint
+	// composite left the surface in front (PortalcraftEarly.hlsl) - it shows under the water's tint. So does a portal
+	// on the ground under the water (a unit off it: too close to tell from the ground by depth - and through it, Portal
+	// 2's depth is what is seen through it): the ray meets it under the water.
 	if (PcOpaqueDepth && inside && world.a >= 0.98 && DebugView == 0)
 	{
 		const float zt = mc_depth(muv);
 		const float zo = mc_linear(tex2Dlod(sODepth, float4(muv, 0, 0)).r);
-		if (zo < 1e8 && zo > zt + 2.0 && zh > zm + allow && zh < zm * zo / max(zt, 1e-3) - allow)
+		const float zSolid = zm * zo / max(zt, 1e-3);
+		const float tp = portal_hit(PcCamR * ray.x + PcCamU * ray.y - PcCamF * ray.z);
+		if (zo < 1e8 && zo > zt + 2.0 && zh > zm + allow && (zh < zSolid - allow || (tp > zm && tp < zSolid + allow)))
 		{
 			const float3 tint = PcFog.z > 0.5 ? PcFogColor : float3(0.17, 0.32, 0.62);
 			return float4(lerp(host, tint, 0.45), 1.0);
@@ -446,7 +487,8 @@ float4 PS_Composite(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target
 	const float visible = zm < zh + reach ? 1.0 : 0.0;
 	const float cover = world.a * visible;
 	float3 mc = relight(world.rgb, uv);
-	if (PcFog.z > 0.5)
+	// (not in Minecraft's own world: Minecraft's picture has its fog already there)
+	if (PcFog.z > 0.5 && !PcSurface)
 		mc = lerp(mc, PcFogColor * world.a, saturate((zm - PcFog.x) / max(PcFog.y - PcFog.x, 1.0))); // (premultiplied)
 	return float4(mc * visible + host * (1.0 - cover), cover);
 }

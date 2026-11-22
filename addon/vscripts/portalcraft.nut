@@ -27,16 +27,20 @@ printl("[Portalcraft] portalcraft.nut");
 
 // The box's model is never drawn, but traces that test hitboxes (lasers, bullets: MASK_SHOT) hit a model's hitboxes
 // instead of its box. Chell's skeleton stood at each box's corner, so lasers went through most of a block: a model
-// with no hitboxes makes them stop at the box. (The add-on precaches it, then switches to it.)
-::PCboxModel <- "models/player/chell/player.mdl";
-::PCboxHitboxFree <- function (on) {
-	PCboxModel = on ? "models/props_office/paper_single.mdl" : "models/player/chell/player.mdl";
+// with no hitboxes makes them stop at the box. Only where it is precached, though: a prop made with a model that isn't
+// is an "Engine Error" that ends Portal 2. The add-on precaches it with a prop of its own, pc_precache, which it leaves
+// in the level - where that prop is, the model is precached (a save brings both back). A variable set once isn't
+// enough: a save brings this script's variables back too, and the precache with them only if the prop came along -
+// box lines still queued from before a load ran in the new level with the old setting (sp_a2_laser_over_goo).
+::PCboxModel <- function () {
+	return Entities.FindByName(null, "pc_precache") != null ? "models/props_office/paper_single.mdl" : "models/player/chell/player.mdl";
 }
+::PCboxHitboxFree <- function (on) {} // (older add-ons switched to the model with this)
 
 /// A box with its min corner at (x, y, z) and size (a, b, c), all in units.
 ::PCbox <- function (id, x, y, z, a, b, c) {
 	PCdel(id);
-	local e = CreateProp("prop_dynamic", Vector(x, y, z), PCboxModel, 0);
+	local e = CreateProp("prop_dynamic", Vector(x, y, z), PCboxModel(), 0);
 	if (e == null) return;
 	e.__KeyValueFromInt("solid", 2);
 	e.__KeyValueFromInt("rendermode", 10);
@@ -44,6 +48,91 @@ printl("[Portalcraft] portalcraft.nut");
 	e.__KeyValueFromString("targetname", "pc_box");
 	e.SetSize(Vector(0, 0, 0), Vector(a, b, c));
 	PCboxes[id] <- e;
+}
+
+// ---- Minecraft's own worlds (sp_mc_overworld, sp_mc_nether, ...): their boxes are used again ----
+// Every entity a script gets a handle to gets a script id: a string Portal 2 keeps in its game string pool until the
+// level unloads, and the pool holds 65535 ("Engine Error: CUtlRBTree overflow!"). The overworld's land comes and goes
+// with every step (and every block broken sends a chunk's boxes again), so there a box that goes is parked - no size,
+// out of the way, named pc_boxspare - and the next box takes it: new entities only for more boxes at once than ever.
+::PCspare <- [];
+
+::PCdelS <- function (id) {
+	if (!(id in PCboxes)) return;
+	local e = PCboxes[id];
+	delete PCboxes[id];
+	if (e == null || !e.IsValid()) return;
+	e.SetSize(Vector(0, 0, 0), Vector(0, 0, 0));
+	e.SetOrigin(Vector(0, 0, -15000));
+	e.__KeyValueFromString("targetname", "pc_boxspare");
+	PCspare.append(e);
+}
+
+::PCboxS <- function (id, x, y, z, a, b, c) {
+	PCdelS(id);
+	local e = null;
+	while (e == null && PCspare.len() > 0) {
+		local s = PCspare.pop();
+		if (s != null && s.IsValid()) e = s;
+	}
+	if (e == null) {
+		e = CreateProp("prop_dynamic", Vector(x, y, z), PCboxModel(), 0);
+		if (e == null) return;
+		e.__KeyValueFromInt("solid", 2);
+		e.__KeyValueFromInt("rendermode", 10);
+		e.__KeyValueFromInt("disableshadows", 1);
+	}
+	e.__KeyValueFromString("targetname", "pc_box");
+	e.SetOrigin(Vector(x, y, z));
+	e.SetSize(Vector(0, 0, 0), Vector(a, b, c));
+	PCboxes[id] <- e;
+}
+
+/// Every box goes (Minecraft sends them all again) - parked, by name too (ones the table lost).
+::PCboxClearS <- function () {
+	local list = [];
+	foreach (id, e in PCboxes) list.append(id);
+	foreach (id in list) PCdelS(id);
+	list = [];
+	for (local e = Entities.FindByName(null, "pc_box"); e != null; e = Entities.FindByName(e, "pc_box")) list.append(e);
+	foreach (e in list) {
+		e.SetSize(Vector(0, 0, 0), Vector(0, 0, 0));
+		e.SetOrigin(Vector(0, 0, -15000));
+		e.__KeyValueFromString("targetname", "pc_boxspare");
+		PCspare.append(e);
+	}
+	::PCboxes <- {};
+}
+
+// ---- Minecraft's own worlds have no end, this map does: it follows the player (Minecraft's Origin) ----
+/// Portal 2's 0, 0 moved under the player: everything here moves (dx, dy) units with it, in this one tick - the land's
+/// boxes, the player (unless Minecraft places it: riding), the loose things and what was placed from Minecraft (pc_el_*).
+/// (The open portals are moved by the add-on: a script here can't find an entity by its index.)
+// (Portal 2's Squirrel has no closures over locals: a nested function can't see d - so plain functions, d passed in)
+::PCshiftInside <- function (o) {
+	return fabs(o.x) < 15000 && fabs(o.y) < 15000;
+}
+
+::PCshiftOne <- function (e, d) {
+	if (e == null || !e.IsValid() || e.GetMoveParent() != null) return;
+	local o = e.GetOrigin() + d;
+	if (!PCshiftInside(o)) return;
+	local v = e.GetVelocity();
+	e.SetOrigin(o);
+	e.SetVelocity(v);
+}
+
+::PCshift <- function (dx, dy, player) {
+	local d = Vector(dx, dy, 0);
+	foreach (id, e in PCboxes) if (e != null && e.IsValid()) e.SetOrigin(e.GetOrigin() + d);
+	if (player) PCshiftOne(GetPlayer(), d);
+	foreach (cls in ["prop_weighted_cube", "prop_monster_box", "prop_physics", "prop_physics_override", "npc_portal_turret_floor",
+		"npc_personality_core", "prop_glass_futbol", "prop_exploding_futbol", "prop_paint_bomb"]) {
+		for (local e = Entities.FindByClassname(null, cls); e != null; e = Entities.FindByClassname(e, cls)) PCshiftOne(e, d);
+	}
+	local placed = [];
+	for (local e = Entities.FindByName(null, "pc_el_*"); e != null; e = Entities.FindByName(e, "pc_el_*")) placed.append(e);
+	foreach (e in placed) PCshiftOne(e, d);
 }
 
 // ---- the final fight (sp_a4_finale4) ----
@@ -69,7 +158,9 @@ if (Entities.FindByName(null, "pc_cleanup") == null) {
 }
 // (at once: an EntFire Kill would land a frame later and take the boxes Minecraft sends right after this script)
 for (local e = Entities.FindByName(null, "pc_box"); e != null; e = Entities.FindByName(null, "pc_box")) e.Destroy();
+for (local e = Entities.FindByName(null, "pc_boxspare"); e != null; e = Entities.FindByName(null, "pc_boxspare")) e.Destroy();
 PCboxes = {};
+PCspare = [];
 
 // ---- Minecraft explosions: a real Portal 2 explosion (fireball, sound, shake) and a physics blast; no Portal 2
 // damage to the player (Minecraft already hurt it, and its hits reach Portal 2) ----
@@ -120,7 +211,7 @@ PCboxes = {};
 		return;
 	}
 	if (e == null) {
-		e = CreateProp("prop_dynamic", Vector(x, y, z), PCboxModel, 0);
+		e = CreateProp("prop_dynamic", Vector(x, y, z), PCboxModel(), 0);
 		if (e == null) return;
 		e.__KeyValueFromInt("solid", 2);
 		e.__KeyValueFromInt("rendermode", 10);
@@ -262,6 +353,38 @@ PCboxes = {};
 	EntFireByHandle(t, "Disable", "", 0, null, null);
 	EntFireByHandle(t, "Enable", "", 0.03, null, null);
 	EntFireByHandle(t, "Kill", "", 0.6, null, null);
+}
+
+// ---- cl_show_mcstandin (debugging): the invisible boxes standing in for Minecraft's blocks, drawn near the player a few
+// times a second (debug overlay boxes, seen through everything): green the blocks' boxes, yellow the laser twins of
+// blocks beside a beam, blue the floors over goo ----
+::PCstandin <- { timer = null };
+
+::PCstandinTick <- function () {
+	local p = GetPlayer();
+	if (p == null) return;
+	local at = p.GetOrigin();
+	local n = 0;
+	foreach (kind in [["pc_box", 80, 255, 80], ["pc_lbox", 255, 220, 40], ["pc_goofloor", 80, 160, 255]]) {
+		for (local e = Entities.FindByNameWithin(null, kind[0], at, 768); e != null && n < 800; e = Entities.FindByNameWithin(e, kind[0], at, 768)) {
+			DebugDrawBox(e.GetOrigin(), e.GetBoundingMins(), e.GetBoundingMaxs(), kind[1], kind[2], kind[3], 0, 0.3);
+			n++;
+		}
+	}
+}
+
+::PCstandinShow <- function (on) {
+	if (PCstandin.timer == null || !PCstandin.timer.IsValid()) {
+		PCstandin.timer = Entities.FindByName(null, "pc_standin");
+		if (PCstandin.timer == null) {
+			PCstandin.timer = Entities.CreateByClassname("logic_timer");
+			PCstandin.timer.__KeyValueFromString("targetname", "pc_standin");
+			PCstandin.timer.__KeyValueFromString("OnTimer", "!self,RunScriptCode,PCstandinTick(),0,-1");
+			EntFireByHandle(PCstandin.timer, "RefireTime", "0.25", 0, null, null);
+		}
+	}
+	EntFireByHandle(PCstandin.timer, on ? "Enable" : "Disable", "", 0, null, null);
+	printl("[Portalcraft] stand-ins " + (on ? "shown" : "hidden"));
 }
 
 printl("[Portalcraft] ready");

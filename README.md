@@ -23,6 +23,7 @@ built first (see *Building from source*).
   hand/HUD layer, turns each Portal 2 map (`.bsp`) into invisible barrier blocks in its own region of a void world, and
   bridges health.
 - They talk through shared memory on your PC (`Local\PortalcraftLink`); nothing goes over the network.
+- The whole design, the problems met building it and how they were solved: `P2-MC_DESIGN.md`.
 
 ## Install (once)
 You need Windows, Portal 2 on Steam, and Minecraft: Java Edition (an account that owns it). Pick the launcher you use
@@ -50,10 +51,12 @@ touches that copy again; removing Portalcraft leaves it there.
 2. Double-click **`Play-Portalcraft.bat`**.
 3. The Modrinth App opens (or, without a Modrinth Portalcraft instance, the Minecraft Launcher): press **Play** on
    **Portalcraft**. (Official launcher: it warns that the installation is modified, press **Play** again. First
-   start only: click through Minecraft's accessibility screen.) Minecraft opens its Portalcraft world by itself. If
-   you see the title screen instead, the mod didn't load: check the instance's `mods` folder has both jars.
-4. Portal 2 starts by itself once Minecraft is ready. Load a save or start a chapter as usual. Minecraft's window
-   hides while Portal 2 runs.
+   start only: click through Minecraft's accessibility screen.) Minecraft stops at its title screen, which says
+   **Waiting for Portal 2** under its buttons. If it doesn't say that, the mod didn't load: check the instance's
+   `mods` folder has both jars.
+4. Portal 2 starts by itself once Minecraft is up, and Minecraft then opens its Portalcraft world on its own (it
+   waits for Portal 2 so that it never takes the mouse: there is nothing to click in its window). Load a save or
+   start a chapter as usual. Minecraft's window hides while Portal 2 runs.
 5. Quit Portal 2 normally when you're done. Minecraft saves and quits, and ReShade is taken back out of Portal 2's
    folder. Leave the black Play window open until then.
 
@@ -135,11 +138,21 @@ press. With the option off you are Chell in both modes (her size and movement; C
 While a Minecraft screen is open (inventory, chat, chest, pause menu), everything goes to Minecraft and a cursor is
 drawn.
 
+**Spectator** (`/gamemode spectator`, with "spectator = noclip" on): you fly through Portal 2's walls with its noclip,
+and the mouse wheel sets the flying speed as in Minecraft, in both modes (in Portal mode Portal 2's own binds on the
+wheel don't fire while it turns).
+
 **Minecraft Control Takeover** (Portalcraft... > Crossovers > Controls, off by default): for people whose Portal 2 binds
 clash with Minecraft's. A key bound to one of Minecraft's other controls (a mod's zoom key, advancements on L, the
 creative hotbar keys on C and X...) goes to Minecraft in both modes, never to Portal 2's bind for the same key.
 Moving, jumping, sneaking, sprinting, the mouse, the hotbar, inventory, chat and Minecraft's screenshot, fullscreen,
 hide-HUD (F1) and camera keys stay as above. To give a key back to Portal 2, unbind it in Minecraft's Controls.
+
+**MC Caption Mode** (Portalcraft..., off by default): with Portal 2's subtitles on, what its characters say goes to
+Minecraft's chat instead of Portal 2's caption box, in their colours (Wheatley's blue, GLaDOS's green...), and fades
+when Portal 2's caption would: as the line ends. Captions of sounds ([Clock Ticking]) stay Portal 2's. While it's on,
+the chat shows in Portal mode too. In cutscenes, or with Minecraft's HUD (F1) or chat hidden, Portal 2 shows its
+lines as ever.
 
 **Minecraft's pause menu has a Portalcraft... button**: pick what crosses between the games (Minecraft movement,
 Minecraft HUD in Portal mode, Minecraft healing, Minecraft hurts Chell, knockback, solid blocks, lasers, explosions, spectator = noclip, pause
@@ -154,17 +167,42 @@ you heal by eating like in Minecraft (the starter kit has food). Mob hits knock 
 you in the other.
 
 **Crossovers** (most can be switched off in the **Portalcraft...** menus of Minecraft's pause screen):
-- *Building and mining:* Minecraft blocks are solid in Portal 2 (for you, cubes and lasers). Mining Portal 2's world
+- *Building and mining:* Minecraft blocks are solid in Portal 2 (for you, cubes and lasers), and light bridges and
+  funnels stop at them as at a wall (a portal on a block takes them on). Mining Portal 2's world
   gives Minecraft items: dirt, metal (copper down in Old Aperture), redstone from buttons and doors, torches from light
   bridges, gel potions from painted surfaces. Plants grow on Portal 2's dirt.
-- *Digging into Portal 2 (EXPERIMENTAL, off by default):* switch on "Real Mining Portal 2" (Portalcraft... > Crossovers;
+- *Digging into Portal 2 (off by default):* switch on "Real Mining Portal 2" (Portalcraft... > Crossovers;
   it switches "Mining Portal 2" on with it) and a pickaxe digs real holes into Portal 2's walls, floors and ceilings. The block drops what its surface is made of,
   the blocks around show what the map has there (white concrete under white panels, deepslate deeper in) and mine like
   Minecraft blocks, and you can tunnel, fall in, and break back out into a chamber from behind. Holes refill when the
   map starts fresh, and all of them when the option goes off; balance mode switches it off. Cubes,
   turrets and other physics objects fall into holes too, and Portal 2's lasers, funnels, grills, effects and
-  captions stay on top of a hole. Known issues: what Portal 2 has behind a thin surface shows as darkness, and an
-  object sunk all the way into a hole is hidden (Portal 2 doesn't draw things inside its walls).
+  captions stay on top of a hole. A hole through a thin wall shows what Portal 2 has behind it (the next room), except
+  where Minecraft has a block there: a cell holding part of a Portal 2 surface turns to deepslate when it's uncovered,
+  and mining it opens the view. Known issue: an object sunk all the way into a hole is hidden (Portal 2 doesn't draw
+  things inside its walls).
+- *White and black panels:* Portal 2's own wall panels as blocks (4 from 4 concrete of their colour in a square, or one
+  from one on a stonecutter, and back to concrete the same way). Portal 2 draws its own white or black panel texture,
+  from your Portal 2 install, on every face of them that shows, lit by Portal 2's light around them. A panel filling
+  in a dug-out hole of its own colour becomes the wall it was cut from (the map's texture, alignment and lightmap
+  there), so the hole is simply gone. A panel anywhere else takes the look of the last panel of its colour you filled
+  in (walls and floors keep one each), or, before you've filled any in on this map, the nearest map surface of its
+  colour; with no such surface nearby it's Portal 2's chamber panels (one panel covers 2 by 2 blocks, lined up with the
+  world, floor tiles on top faces). Underneath they are white and black concrete, so they look like that if Portal 2
+  can't draw them.
+- *Panel stairs and slabs:* white and black, crafted like stone's (6 panels make 4 stairs, 3 make 6 slabs, or 1 makes
+  1 stair or 2 slabs on a stonecutter). Portal 2 draws them in its panels too, with every face of one block that
+  points the same way looking the same. White ones take portals only on whole block faces: a top slab's top, a double
+  slab, a stair's back or bottom. A step or a bottom slab's top fizzles the shot.
+- *Portalable blocks:* Portal 2's gun puts portals on white panels (and their stairs and slabs), white concrete and white concrete powder, as on its
+  own white walls (black panels and every other block refuse them, like Portal 2's black walls). The face needs room
+  for a whole portal, and breaking a block under a portal fizzles it.
+- *Heal* (a Potion of Healing in the middle of the grid, white concrete or white panels above it and to its left, black
+  concrete or black panels to its right and below it): with Real Mining on, it puts back the dug-out terrain you aim
+  at, as it was; crouch while using it to put back all the terrain dug out of the map. Crafting it with another Potion
+  of Healing makes it put back a bigger square each time, up to 5 by 5 blocks (its tooltip shows the area). Cells
+  that would shut you inside the rock or take the floor from under you stay dug: step out of the hole first. With
+  nothing dug, or Real Mining off, it heals 5 hearts. One is used up each time in survival.
 - *Portal 2 things in Minecraft:* punch a cube (or sneak and punch a turret) to put it in your inventory and place it
   again elsewhere; everything Portalcraft adds is in its own tab of the creative inventory;
   personality cores and the portal gun can be crafted; Minecraft's portal gun item fires Portal 2's portals, and up
@@ -198,6 +236,10 @@ you in the other.
   lasers burn mobs and light TNT; turrets shoot Minecraft's mobs and catch fire in Minecraft's fire, and the mobs
   they shoot fight back (passive ones run): their hits knock the turret about, and an iron golem flings it across the
   room; Minecraft explosions shove cubes and turrets and break Wheatley's monitors.
+- *Glass relays lasers (off by default; Portalcraft... > Crossovers):* a laser that hits a glass block (plain or
+  stained) comes out of it again like out of a reflector cube, in the direction you faced when you placed the block
+  (glass that got there any other way passes it straight on). Tinted glass just blocks it. Two blocks aimed at each
+  other only stay lit while a real laser feeds them.
 - *Portals:* Minecraft is drawn through Portal 2's portals (you see yourself), and mobs, items, arrows, TNT and ender
   pearls go through them with their momentum. Mobs chasing you walk through them when that's the way to you. Ender pearls that fall into a death pit vanish instead of landing you
   in it.
@@ -206,7 +248,8 @@ you in the other.
   or slicing ("Your player drawn by Portal 2", Portalcraft... > Crossovers, on by default). Held items and trimmed
   armour still come from Minecraft's picture. You only see yourself through portals that face each other across a
   room: two portals on the same wall can't show you.
-- *Water and goo:* Minecraft water and lava flow over Portal 2's floors; you swim in them, with their fog. Flowing water
+- *Water and goo:* Minecraft water and lava flow over Portal 2's floors; you swim in them in either mode (Portal mode
+  swims Minecraft's way while you're in deeper than your knees), with their fog. Flowing water
   carries cubes, turrets and Portal 2's other loose things along with it. Optionally Portal 2's goo is water too: you
   swim in it, and fish and squids live in it.
 - *Light:* Minecraft's torches, lanterns, fire, lava and glowstone light up Portal 2's surfaces around them (Portal 2's
@@ -224,7 +267,8 @@ you in the other.
   and you get a clock to tell it by; switching it off takes the clock back and makes it noon again. The chambers stay
   lit as at noon either way.
 - *Balance* (Portalcraft... > Balance..., each rule on its own or all at once, all off by default): blocks and buckets
-  only on portalable (white) surfaces, or on your own blocks with a portalable surface within a block of the new one;
+  only on portalable (white) surfaces (white panels and white concrete count), or on your own blocks with a portalable
+  surface within a block of the new one;
   no cube copies; three hits for each of Wheatley's phases; ender pearls fizzle in grills; and **Saves rewind Minecraft**: when Portal 2 loads a save (dying,
   a quickload, `load a` for a `save a`), Minecraft goes back to that save too - blocks placed and broken since, your
   inventory, XP, health, hunger and effects, and mobs and items that came since (mobs killed since stay gone; chests
@@ -245,7 +289,7 @@ you in the other.
 **Recipes unlock as you go through the campaign.** The cores, the synthesizer, the A.S.M.B.U.T.S. and Long Fall
 Boots can be crafted from the start; each testing element can be crafted once Portal 2 reaches the map where it first
 turns up (or any map after it). Chat says which recipes are new. A recipe that isn't unlocked yet gives nothing in the
-crafting grid (a Crafter block still makes it).
+crafting grid, and a Crafter block won't make it either.
 
 | Unlocked at | Recipes |
 |---|---|
@@ -285,14 +329,63 @@ unlocked.
 Minecraft's pause menu > **Portalcraft...** > **Minecraft's world** takes Portal 2 to `sp_mc_overworld`, a map that is
 Minecraft's own generated land: hills, forests, lakes, its sky. Portal 2's game is saved first (`pc_before_overworld`),
 and **Back to the test chambers** (same button) loads it again: the same chamber, the same place. (Portal 2's console
-works too: `map sp_mc_overworld`.)
+works too: `map sp_mc_overworld`.) Once you've finished Portal 2, its main menu's **Extras** has it as well: **Minecraft:
+The Overworld**, at the bottom of the list, goes straight there.
 - Both modes work there as everywhere: Portal mode moves you like Chell (a one-block step needs a jump), Minecraft mode
-  like Minecraft. Cubes land on the ground.
+  like Minecraft. Cubes land on the ground 32 to 48 blocks around you; one left lying farther away is held where it
+  rests until you come back.
+- Days and nights pass there. The chambers stay at noon: it's noon again when you go back.
+- Minecraft's light falls on what Portal 2 draws there: the portal gun in your hand, Chell (and Steve) seen through a
+  portal, take the light where you stand - dark blue at night, warm beside a torch, as bright as ever by day. The
+  portals' glow stays bright.
 - **Portals** go on the land: a portal needs 2 x 4 blocks of flat face (solid behind, open in front) near where it
-  hits, and snaps to the block grid; on anything smaller it fizzles.
-- It's a separate Minecraft dimension (`portalcraft:surface`), 940 blocks across: nothing there touches the blocks you
-  build in Portal 2's maps. You arrive on the nearest dry land around its middle, and come back where you left.
+  hits, and snaps to the block grid; on anything smaller it fizzles. A shot carries as far as you can see - a hill or a
+  wall a hundred blocks off takes a portal too.
+- It's a separate Minecraft dimension (`portalcraft:surface`): nothing there touches the blocks you build in Portal 2's
+  maps. You arrive on the nearest dry land around its middle, and come back where you left.
+- **It has no edge**, like Minecraft's own world. Portal 2's map is only 940 blocks across, so it follows you: each time
+  you get 256 blocks from its middle, it moves back under you, with your portals, cubes and anything you placed. You
+  shouldn't notice it happen. (Garry's Mod's Infinite Map Base addon fakes endless maps the same way.)
+- **Portals any distance apart.** A portal left far behind (a few hundred blocks, past the edge of Portal 2's map) stays
+  open: Portal 2 keeps it high in its sky (a tiny portal far up there is one), Minecraft keeps the land around it
+  loaded, and walking into the other portal takes you to its real place with your speed. Through it you see what's
+  within your render distance; past that, sky. A cube thrown into a portal that far away comes out of the one in the
+  sky.
 - If you die there, you come back on its land.
+
+### The Nether, the End, and other dimensions
+Minecraft's own portals work in Minecraft's world, and Portal 2 follows you into each dimension's map:
+- A **Nether portal** (an obsidian frame, lit) takes you to the Nether, and Portal 2 loads `sp_mc_nether`. The Nether's
+  portals lead back to Minecraft's world, never into the test chambers.
+- An **End portal** takes you to the End, and Portal 2 loads `sp_mc_end`. The End's exit portal, which opens once the
+  dragon is dead, takes you back to Minecraft's world. The first time, the credits roll before you go back, as they do in Minecraft.
+- **A mod's dimension** (the Aether, say) works the same way through that mod's own portal: Portal 2 loads `sp_mc_other`,
+  which stands for whichever such dimension you went to last. Portalcraft builds whatever is there, but it doesn't
+  support any mod's own features, only getting there and walking around. `map sp_mc_other` with no such dimension takes
+  you to Minecraft's world instead.
+- **You can only travel between dimensions in these maps.** In Portal 2's chambers, a Nether or End portal does nothing.
+- Portal 2's console takes you straight there: `map sp_mc_nether`, `map sp_mc_end`. You arrive near the middle: on the
+  End's obsidian platform, or on solid ground in the Nether.
+- Every dimension is endless, as in Minecraft: portals link the way Minecraft links them (one block of the Nether for
+  eight of Minecraft's world), and the End's outer islands are out there past its gateways. (Worlds made before this
+  had a 940-block border; it's gone the next time you go there.)
+
+### A new Minecraft world
+These Minecraft chat commands only work in Minecraft's world (the `sp_mc_*` maps). Portal 2's maps reject them.
+- **`/newworld`** makes a new Minecraft world with a new seed: a new surface, Nether, End and any mod dimensions.
+  **The current one is deleted**, unless you add `keep_current_world:true`, which keeps it to load later.
+  `seed:<number or text>` picks the seed.
+- **`/loadworld [name]`** loads a kept world. With no name it loads the last one kept; Tab lists their names
+  (`world_1`, `world_2`, ...). The world you leave is kept too, unless you add `keep_current_world:false`.
+- Minecraft saves, closes and reopens its world for either one, which takes a few seconds. Portal 2 stays where it is, and
+  you arrive on the new surface. You keep your inventory, your Portal 2 progress and whatever you built in the test
+  chambers. A bed you slept in over there is gone.
+
+## Advancements
+Minecraft's Advancements screen has a **Portalcraft** tab: 17 advancements for Portal 2's story, from getting the
+Portal Gun to escaping the facility. They come as the story gets there (a line of dialogue, a map you arrive at, the
+gel pipes connecting, your first ride in an excursion funnel), plus a few of your own doing: drinking a gel potion,
+turning on No Portal Gun mode. Each one pops up in the corner, in either mode. (Minecraft's other pop-ups stay hidden.)
 
 ## Minecraft Music
 Minecraft's pause menu > **Portalcraft...** > **Music...** > **Minecraft Music** plays Minecraft's music instead of
@@ -321,6 +414,14 @@ away. Your work is kept in `tools\chellpose\pose.json`. The package comes with a
 exported file is worked out from Portal 2's animations on your PC, so open the tool once and press Export to use them:
 until then the ending shows Chell's arms as usual.
 
+## End Poem ending
+With **End poem ending** on (Crossover features, off by default), Portal 2's ending movie - the ride up after "You win.
+Just go." - doesn't play. Minecraft's end poem scrolls instead, on its End-portal background, to Aria Math on a loop,
+while Portal 2 stays silent. Space speeds it up, and Escape skips it. When it's over, the game counts as finished, and
+you wake up in Minecraft's own world (sp_mc_overworld) with a Weighted Companion Cube: "And the universe said, I love
+you. / Because you are love." From there, **Back to the test chambers** goes to Portal 2's main menu. Loading any
+chamber save makes it work as usual again.
+
 ## Edit Text
 **`Edit-Text.bat`** (in the source code, not the player package: it edits the mod's sources; needs Python 3) opens a
 page in your browser with every piece of Portalcraft's text: each item's name, description and how-it-works lines (an
@@ -331,28 +432,55 @@ sources, so text outside Minecraft (Portal 2's, the launchers') arrives with the
 are filled in by the game: the page warns if one goes missing.
 
 ## Known limits
-- The ceiling laser at the start of Laser Intro (sp_a2_laser_intro) goes through everything, even Portal 2's own cubes.
-- Portal 2's walls and floors are measured to 1/8 of a block, so mobs, items and arrows stop at the real surfaces. But
-  Minecraft's blocks always sit on the block grid, and placing goes by it: a block goes in front of the surface you
-  click, or into the surface's cell when that sinks it less than half a block. On a Portal 2 floor that isn't on the
-  grid a block can stand up to half a block above it, so a 2-block doorway there may be too low to walk through.
-  Build on a layer of blocks.
 - Floors are measured around you (16 blocks): mobs far away can still fall through model floors.
 - Places only Chell can crawl through (under 1.5 blocks high) need Minecraft movement switched off.
 - In some maps goo and bottomless pits share one kill volume, so an ender pearl thrown into goo can vanish even with
   "goo is water" on.
-- Portal 2 runs with cheats on in these sessions, so its Steam achievements don't unlock. Single player only.
-- With SourceAutoRecord (SAR) loaded, Minecraft movement switches itself off (both hook Portal 2's movement; you move
-  like Chell). Everything else works. Leave SAR out of Portalcraft sessions (`plugin_load sar` in your autoexec) to get
-  it back.
+- SourceAutoRecord (SAR) works alongside Portalcraft (tested with SAR 1.15.5), Minecraft movement included. SAR's own
+  crash reports (`crash_reports` in Portal 2's folder) may still log a few harmless ones from Portal 2's start-up.
 - ReShade's overlay is on Ctrl+F12 (it has the shader's tuning sliders: depth bias, lighting match, debug views).
-- Minecraft's world: it stays noon there. In Portal mode there is no swimming (Portal 2 has no water: you walk on the
-  bottom). Only the land near you (16 to 32 blocks around) is solid for Portal 2, so a cube thrown far can fall
-  through the ground until you walk closer.
+- Minecraft's world: only the land near you is solid for Portal 2 (for you 16 to 32 blocks around, for cubes 32 to 48),
+  so a cube thrown farther than that falls through the ground.
+
+### Can't be fixed (as far as we know)
+- **Water looking lighter over shallow ground.** Seen from above, a lake's shallow bed (sand, gravel) shows through as a
+  lighter blue haze, darker where the water is deep. That is Minecraft's own water: the same spot drawn by Minecraft
+  alone, with Portal 2 closed, looks the same. (Under water there was a real bug, now fixed: in Minecraft's own world
+  the water's fog went on twice, a second lighter blue haze over Minecraft's own.)
+- **Achievements.** Portal 2 runs with cheats on in these sessions (Portalcraft needs its console), so its Steam
+  achievements don't unlock.
+- **Single player only.** Co-op has two players and a split screen; Portalcraft drives one player and one view.
+- **Blocks on off-grid floors.** Portal 2's walls and floors are measured to 1/8 of a block, so mobs, items and arrows
+  stop at the real surfaces. But Minecraft's blocks always sit on the block grid, and placing goes by it: a block goes
+  in front of the surface you click, or into the surface's cell when that sinks it less than half a block. On a Portal
+  2 floor that isn't on the grid a block can stand up to half a block above it, so a 2-block doorway there may be too
+  low to walk through. Build on a layer of blocks.
+- **The ceiling laser at the start of Laser Intro** (sp_a2_laser_intro) goes through everything, even Portal 2's own
+  cubes: no blocker tried (props, boxes, cubes) stops it.
+
+## Portal 2's console: Portalcraft's own settings
+Type these into Portal 2's console (` key). They are there once a map has loaded, and go back to their defaults when
+Portal 2 closes; typing just the name shows the value and what it does.
+- `mc_function_key_toggle 1`: Minecraft's function keys work in Portal mode too. F1 hides Minecraft's HUD, F2 takes a
+  Minecraft screenshot, F3 (and the F3 + key combinations) shows Minecraft's debug screen. F4, F6 to F10 and F12 go to
+  Minecraft as well, in both modes, instead of Portal 2's binds on them. F5 and F11 stay as they were. `0` (the
+  default) turns it off.
+- `player_size_x`, `player_size_y`, `player_size_z`: the player's size in blocks, from 0.1 to 16. x runs along
+  Minecraft's east-west axis, z north-south, y is the height; Minecraft's own size is 0.6, 1.8, 0.6. The eye sits at
+  nine tenths of the height, and crouching and swimming shrink in proportion. Minecraft's player is scaled with the
+  height (its own box stays square). Any size other than Minecraft's is yours in both modes; otherwise Portal mode is
+  Chell's size, as always.
+- `cl_show_mcstandin 1` (debugging): draws the invisible boxes that stand in for Minecraft's blocks in Portal 2 (what
+  you stand on, what lasers stop at) near you, through walls: green for blocks, yellow for the laser twins of blocks
+  beside a beam, blue for floors over goo.
+- `rendering_snap` (debugging): saves what the bridge between the two games is drawing right now, in
+  `runtime\snaps\`: a `.txt` (both games' cameras, Minecraft's frames, every value the effect was given) and a `.bmp`
+  of the screen.
 
 ## Playtesting: reporting a bug
 Say what you were doing, which chapter or map it was (Portal 2's console: `status` shows it), and whether you were in
-Portal or Minecraft mode. Then send these files:
+Portal or Minecraft mode. For something that looks wrong, type `rendering_snap` into Portal 2's console while it's on
+screen and send the two files it makes in `runtime\snaps\` too. Then send these files:
 - `logs\play.log` in this folder (the Play window's log);
 - `runtime\ReShade.log` in this folder (the Portal 2 side; it's replaced each time you play, so copy it before playing
   again);
@@ -387,9 +515,9 @@ backup in `Documents\Portal 2 saves (backup before Portalcraft)` stays: delete i
   `runtime\cmd.txt` (Portal 2's console) and window messages, never your real mouse and keyboard.
 
 ## Credits and license
-- Made by ZannaFella, with AI: most of Portalcraft's code was written by Claude (Anthropic's Claude Opus 5.5, in Claude
-  Code), with ZannaFella deciding what to build and playtesting every step of it in the real games. The item textures
-  are all hand-drawn by ZannaFella.
+- Made by ZannaFella, with AI: all of Portalcraft's code was written by Claude (Anthropic's Claude Opus 5.5, in Claude
+  Code). ZannaFella came up with what to build and how it should work, wrote most of the mod's text, drew every item
+  texture by hand, and playtested every step of it in the real games. `P2-MC_DESIGN.md` says who did what in detail.
 - It started from universal-modder's Minecraft x GTA V passthrough example
   (https://github.com/rehan-remade/universal-modder, MIT). Portal 2's type layouts and offsets follow SourceAutoRecord
   (https://github.com/p2sr/SourceAutoRecord, MIT). Drawing into Portal 2 is done through ReShade by crosire

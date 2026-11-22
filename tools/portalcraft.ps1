@@ -28,6 +28,8 @@ $Runtime = if ($RuntimeDir) { $RuntimeDir } else { Join-Path $Root 'runtime' }
 $ReShadeDll = Join-Path $Root 'third_party\runtime\ReShade32.dll'
 # ReShade 6.8.0 add-on build, 32-bit (from ReShade_Setup_6.8.0_Addon.exe, sha256 afe4c8f1...)
 $Marker = '; Portalcraft'
+# Portal 2's maps for Minecraft's own worlds: the overworld's surface, the Nether, the End, any other (a mod's) dimension
+$McMaps = @('sp_mc_overworld', 'sp_mc_nether', 'sp_mc_end', 'sp_mc_other')
 # Portal 2 with -vulkan draws through its own DXVK (bin\dxvk_d3d9.dll: Direct3D 9 on Vulkan) and never loads d3d9.dll.
 # For a -vulkan session ReShade takes DXVK's file name and hands every Direct3D 9 call on ([PROXY] in
 # runtime\ReShade.ini) to runtime\portalcraft_dxvk.dll, which quiets DXVK's log and passes them to DXVK, moved aside
@@ -257,6 +259,31 @@ function Get-CaptionDlc([string] $p2, [switch] $Create) {
 	return $null
 }
 
+# Minecraft's own world in Portal 2's Extras menu (Portal 2 shows the Extras once the game has been finished): one more
+# entry ("map" sp_mc_overworld) and its picture (tools\make_extras.py), in Portalcraft's DLC folder - gone with it. The
+# menu reads the first scripts\extras.txt on Portal 2's search path, and the highest DLC folder comes first: ours is
+# the one Portal 2 would read otherwise (portal2_dlc2's has the Perpetual Testing Initiative video, portal2's doesn't)
+# with the entry added.
+function Add-ExtrasEntry([string] $p2, [string] $dlc) {
+	$pic = Join-Path $Root 'addon\extras\materials\vgui\extras'
+	if (-not (Test-Path (Join-Path $pic 'portalcraft_overworld.vtf'))) { return }
+	$n = [int]((Split-Path -Leaf $dlc) -replace '\D', '')
+	$game = @((($n - 1)..1 | ForEach-Object { "portal2_dlc$_" }) + 'portal2') | ForEach-Object { Join-Path $p2 "$_\scripts\extras.txt" } |
+		Where-Object { Test-Path $_ } | Select-Object -First 1
+	if (-not $game) { return }
+	$text = [IO.File]::ReadAllText($game)
+	$end = $text.LastIndexOf('}')
+	if ($end -lt 0) { return }
+	$entry = "`r`n`t""portalcraft_overworld""`r`n`t{`r`n`t`t""title""`t`t""Minecraft: The Overworld""`r`n" +
+		"`t`t""subtitle""`t""Portalcraft - Minecraft's own world""`r`n" +
+		"`t`t""pic""`t`t""vgui/extras/portalcraft_overworld""`r`n`t`t""map""`t`t""sp_mc_overworld""`r`n`t}`r`n"
+	New-Item -ItemType Directory -Force (Join-Path $dlc 'scripts') | Out-Null
+	[IO.File]::WriteAllText((Join-Path $dlc 'scripts\extras.txt'), $text.Substring(0, $end) + $entry + $text.Substring($end))
+	$mat = Join-Path $dlc 'materials\vgui\extras'
+	New-Item -ItemType Directory -Force $mat | Out-Null
+	Copy-Item (Join-Path $pic 'portalcraft_overworld.*') $mat -Force
+}
+
 # The caption folder's sound caches (maps\soundcache\_master*.cache), copied from the DLC folder before it. Without them
 # Portal 2 rebuilds them as it starts and then never leaves the loading screen for the main menu (only a start
 # straight into a map gets past it); the rebuilt ones are the same as the previous DLC's anyway.
@@ -308,13 +335,16 @@ function Install {
 	$vs = Join-Path $p2 'portal2\scripts\vscripts\portalcraft'
 	New-Item -ItemType Directory -Force $vs | Out-Null
 	Copy-Item (Join-Path $Root 'addon\vscripts\portalcraft.nut') $vs -Force
-	# the map Minecraft's own world is played in (sp_mc_overworld, tools\make_overworld_map.py)
-	$bsp = Join-Path $Root 'maps\sp_mc_overworld.bsp'
-	if (Test-Path $bsp) { Copy-Item $bsp (Join-Path $p2 'portal2\maps\sp_mc_overworld.bsp') -Force }
+	# the maps Minecraft's own worlds are played in (tools\make_overworld_map.py)
+	foreach ($name in $McMaps) {
+		$bsp = Join-Path $Root "maps\$name.bsp"
+		if (Test-Path $bsp) { Copy-Item $bsp (Join-Path $p2 "portal2\maps\$name.bsp") -Force }
+	}
 	$cc = Get-CaptionDlc $p2 -Create
 	if (-not $cc) { Write-Warning "no folder for Portalcraft's caption fixes (Portal 2's DLC folders are missing)" }
+	else { Add-ExtrasEntry $p2 $cc }
 	$where = if ($Vulkan) { "$DxvkFile in front of Portal 2's DXVK, for -vulkan" } else { 'bin\d3d9.dll' }
-	Write-Host "installed ReShade into $p2 ($where, ReShade.ini), portal2\scripts\vscripts\portalcraft\ and portal2\maps\sp_mc_overworld.bsp"
+	Write-Host "installed ReShade into $p2 ($where, ReShade.ini), portal2\scripts\vscripts\portalcraft\ and portal2\maps\sp_mc_*.bsp"
 }
 
 function Remove {
@@ -326,8 +356,10 @@ function Remove {
 	if ((Test-Path $ini) -and ((Get-Content $ini -Raw) -like "*$Marker*")) { Remove-Item $ini -Force; Write-Host "removed $ini" }
 	$vs = Join-Path $p2 'portal2\scripts\vscripts\portalcraft'
 	if (Test-Path $vs) { Remove-Item $vs -Recurse -Force; Write-Host "removed $vs" }
-	$map = Join-Path $p2 'portal2\maps\sp_mc_overworld.bsp'
-	if (Test-Path $map) { Remove-Item $map -Force; Write-Host "removed $map" }
+	foreach ($name in $McMaps) {
+		$map = Join-Path $p2 "portal2\maps\$name.bsp"
+		if (Test-Path $map) { Remove-Item $map -Force; Write-Host "removed $map" }
+	}
 	$cc = Get-CaptionDlc $p2
 	if ($cc) { Remove-Item $cc -Recurse -Force; Write-Host "removed $cc" }
 }
@@ -344,6 +376,7 @@ function Status {
 	Write-Host "  $DxvkFile $dxState"
 	$cc = Get-CaptionDlc $p2
 	Write-Host ("  caption fixes: {0}" -f $(if ($cc) { $cc } else { 'absent' }))
+	Write-Host ("  Extras entry: {0}" -f $(if ($cc -and (Test-Path (Join-Path $cc 'scripts\extras.txt'))) { 'present' } else { 'absent' }))
 	Write-Host ("  portal2.exe running: {0}" -f [bool](Get-Process portal2 -ErrorAction SilentlyContinue))
 	$backup = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Portal 2 saves (backup before Portalcraft)'
 	Write-Host ("  save backup: {0}" -f $(if (Test-Path $backup) { $backup } else { 'none yet' }))
