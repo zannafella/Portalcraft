@@ -241,7 +241,9 @@ you in the other.
   (glass that got there any other way passes it straight on). Tinted glass just blocks it. Two blocks aimed at each
   other only stay lit while a real laser feeds them.
 - *Portals:* Minecraft is drawn through Portal 2's portals (you see yourself), and mobs, items, arrows, TNT and ender
-  pearls go through them with their momentum. Mobs chasing you walk through them when that's the way to you. Ender pearls that fall into a death pit vanish instead of landing you
+  pearls go through them with their momentum. Mobs, items and other blocky things cross smoothly: part-way through, they
+  stick out of the other portal, and they switch sides once their middle is across (an idea from Immersive Portals).
+  Mobs chasing you walk through them when that's the way to you. Ender pearls that fall into a death pit vanish instead of landing you
   in it.
 - *Your player* (skin, armour, cape, elytra), seen in third person (F5, in Minecraft mode) or through a portal, is drawn
   by Portal 2 itself from a copy Minecraft keeps, so it stays put when the camera moves fast instead of lagging behind
@@ -476,14 +478,20 @@ Portal 2 closes; typing just the name shows the value and what it does.
 - `rendering_snap` (debugging): saves what the bridge between the two games is drawing right now, in
   `runtime\snaps\`: a `.txt` (both games' cameras, Minecraft's frames, every value the effect was given) and a `.bmp`
   of the screen.
+- `mc_p2_demo` (debugging): Portal 2's demo recording with Minecraft's side recorded alongside, to show a bug exactly
+  as it happened. `mc_p2_demo record name` (in a map) starts one, `mc_p2_demo stop` ends it (so does a map change).
+  `mc_p2_demo play name` plays it back: Minecraft opens a copy of the world as it was there (your own world is never
+  touched) and follows the demo, then goes back to your world when it ends. `mc_p2_demo list` lists them. Each one is
+  a folder in `runtime\demos\` (about 30 MB: a copy of the part of your world around you).
 
 ## Playtesting: reporting a bug
 Say what you were doing, which chapter or map it was (Portal 2's console: `status` shows it), and whether you were in
 Portal or Minecraft mode. For something that looks wrong, type `rendering_snap` into Portal 2's console while it's on
-screen and send the two files it makes in `runtime\snaps\` too. Then send these files:
+screen and send the two files it makes in `runtime\snaps\` too. For something you can make happen again, an
+`mc_p2_demo record` of it (zip its folder in `runtime\demos\`) shows it best. Then send these files:
 - `logs\play.log` in this folder (the Play window's log);
 - `runtime\ReShade.log` in this folder (the Portal 2 side; it's replaced each time you play, so copy it before playing
-  again);
+  again), and `runtime\crash.txt` if Portal 2 closed by itself (where it crashed, if it did);
 - Minecraft's `logs\latest.log`, and anything in `crash-reports\`, from the instance's folder (Modrinth App: the
   instance's ... menu > Open folder; official launcher: `%APPDATA%\.portalcraft`);
 - `portalcraft_console.log` from Portal 2's `portal2` folder (Steam > Portal 2 > Manage > Browse local files).
@@ -494,7 +502,9 @@ Portal 2's `portal2\SAVE\<number>\` folder.
 ReShade is taken out of Portal 2's folder every time you stop playing (and with `-vulkan`, Portal 2's own
 `bin\dxvk_d3d9.dll` is put back), so Portal 2 itself stays untouched. So is Portalcraft's caption folder (an extra
 `portal2_dlcN` folder with `portalcraft.txt` in it: in no portal gun mode it holds one of Wheatley's lines, cut from your
-own game files, and its caption). If a session ended badly (a crash, the Play window closed early),
+own game files, and its caption), and `portal2\maps\pclong` (made while you play a community map whose name is too
+long for Portalcraft's link: a short-named link to that map's file, so Minecraft can read it) and `pcdemo_*.dem` in
+`portal2\` (`mc_p2_demo`'s demo files while they're in use). If a session ended badly (a crash, the Play window closed early),
 `tools\portalcraft.ps1 remove` (run with `powershell -ExecutionPolicy Bypass -File tools\portalcraft.ps1 remove`) does
 it; so does the next Play. Steam's Verify integrity of game files puts ReShade's slot back but leaves that folder. Then delete the Portalcraft
 instance in the Modrinth App (official launcher: `Install-Portalcraft.ps1 -Uninstall`) and this folder. The save
@@ -522,6 +532,8 @@ backup in `Documents\Portal 2 saves (backup before Portalcraft)` stays: delete i
   (https://github.com/rehan-remade/universal-modder, MIT). Portal 2's type layouts and offsets follow SourceAutoRecord
   (https://github.com/p2sr/SourceAutoRecord, MIT). Drawing into Portal 2 is done through ReShade by crosire
   (https://reshade.me, BSD-3-Clause), and the Minecraft side runs on Fabric (https://fabricmc.net).
+- Smooth crossing (mobs and items part-way through a portal, drawn at both ends) follows the way Immersive Portals by
+  qouteall and contributors does it (https://github.com/iPortalTeam/ImmersivePortalsMod, MIT) - the idea, not its code.
 - Minecraft movement in Portal 2 follows Minecraft 26.3's own rules (its code ships unobfuscated) and the formulas
   collected on the Minecraft Parkour Wiki (https://www.mcpk.wiki).
 - Portalcraft's own code is released into the public domain under the Unlicense (`LICENSE`). The third-party parts

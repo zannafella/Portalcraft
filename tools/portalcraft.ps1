@@ -360,6 +360,13 @@ function Remove {
 		$map = Join-Path $p2 "portal2\maps\$name.bsp"
 		if (Test-Path $map) { Remove-Item $map -Force; Write-Host "removed $map" }
 	}
+	# the add-on's links to maps with names too long for Minecraft's link (game.cpp long_map_alias)
+	$long = Join-Path $p2 'portal2\maps\pclong'
+	if (Test-Path $long) { Remove-Item $long -Recurse -Force; Write-Host "removed $long" }
+	# mc_p2_demo's copy of the demo being played back, and a recording's .dem not yet moved into runtime\demos (demo.cpp)
+	foreach ($dem in Get-ChildItem (Join-Path $p2 'portal2') -Filter 'pcdemo_*.dem' -ErrorAction SilentlyContinue) {
+		Remove-Item $dem.FullName -Force; Write-Host "removed $($dem.FullName)"
+	}
 	$cc = Get-CaptionDlc $p2
 	if ($cc) { Remove-Item $cc -Recurse -Force; Write-Host "removed $cc" }
 }
