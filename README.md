@@ -365,7 +365,17 @@ Minecraft's own portals work in Minecraft's world, and Portal 2 follows you into
   which stands for whichever such dimension you went to last. Portalcraft builds whatever is there, but it doesn't
   support any mod's own features, only getting there and walking around. `map sp_mc_other` with no such dimension takes
   you to Minecraft's world instead.
-- **You can only travel between dimensions in these maps.** In Portal 2's chambers, a Nether or End portal does nothing.
+- **You can only travel between dimensions in these maps** - unless **Wormhole Allowance** is on (Portalcraft... >
+  Crossovers, off by default: "How do you block making a wormhole, anyhow?"). With it off, a Nether or End portal in
+  Portal 2's chambers does nothing. With it on:
+  - A Nether or End portal (or a mod's) built in a test chamber works. Portal 2 saves the chamber and loads that
+    dimension's map, and the Nether portal leads there 1:1: one block of the Nether for one block of the chamber, not
+    eight, because Portal 2's chambers aren't Minecraft's world.
+  - Going back through the portal you came out of (the one in the Nether, or any way out of the End) takes you back
+    into that test chamber, as it was, standing in the portal you built. Any other portal leads to Minecraft's world as
+    usual.
+  - Portalcraft remembers the last 32 of these wormholes, each with its own Portal 2 save (`pc_wormhole_<n>`;
+    `tools\portalcraft.ps1 remove` deletes them).
 - Portal 2's console takes you straight there: `map sp_mc_nether`, `map sp_mc_end`. You arrive near the middle: on the
   End's obsidian platform, or on solid ground in the Nether.
 - Every dimension is endless, as in Minecraft: portals link the way Minecraft links them (one block of the Nether for

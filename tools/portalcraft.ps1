@@ -367,6 +367,10 @@ function Remove {
 	foreach ($dem in Get-ChildItem (Join-Path $p2 'portal2') -Filter 'pcdemo_*.dem' -ErrorAction SilentlyContinue) {
 		Remove-Item $dem.FullName -Force; Write-Host "removed $($dem.FullName)"
 	}
+	# Wormhole Allowance's saves of the chambers left through a Minecraft portal (crossover.cpp; Minecraft's Wormholes)
+	foreach ($sav in Get-ChildItem (Join-Path $p2 'portal2\SAVE') -Recurse -Filter 'pc_wormhole_*.sav' -ErrorAction SilentlyContinue) {
+		Remove-Item $sav.FullName -Force; Write-Host "removed a wormhole save ($($sav.Name))"
+	}
 	$cc = Get-CaptionDlc $p2
 	if ($cc) { Remove-Item $cc -Recurse -Force; Write-Host "removed $cc" }
 }
