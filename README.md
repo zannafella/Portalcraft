@@ -160,11 +160,13 @@ together, through portals, fresh blocks each map), a **Clear this map's blocks**
 (asks first): every Minecraft block, mob and item in all of Portal 2's maps goes, for a fresh run. Your inventory and
 Minecraft's own world stay.
 
-**Survival** (`/gamemode survival`): one health for both games, 1 heart = 10 Portal 2 health. With Minecraft healing
-on (default), Minecraft decides: Portal 2 stops regenerating, its damage (lasers, turrets: as deadly as in Portal 2)
-comes off your hearts, and
-you heal by eating like in Minecraft (the starter kit has food). Mob hits knock you back. Dying in one game kills
-you in the other.
+**Survival**: Portalcraft's world starts in survival, as Minecraft's own new worlds do, and the first time you're in
+it you get the Aperture Science Survival Kit (an oak sapling, bones, Long Fall Boots and the Survival Guide). Worlds
+made by older versions started in creative; `/gamemode survival` switches (and `/gamemode creative` back). One health
+for both games, 1 heart = 10 Portal 2 health. With Minecraft healing on (default), Minecraft decides: Portal 2 stops
+regenerating, its damage (lasers, turrets: as deadly as in Portal 2) comes off your hearts, and you heal like in
+Minecraft: with Infinite saturation (on by default) you never get hungry, so you heal by yourself; with it off, you
+eat. Mob hits knock you back. Dying in one game kills you in the other.
 
 **Crossovers** (most can be switched off in the **Portalcraft...** menus of Minecraft's pause screen):
 - *Building and mining:* Minecraft blocks are solid in Portal 2 (for you, cubes and lasers), and light bridges and
@@ -402,15 +404,18 @@ turning on No Portal Gun mode. Each one pops up in the corner, in either mode. (
 ## Minecraft Music
 Minecraft's pause menu > **Portalcraft...** > **Music...** > **Minecraft Music** plays Minecraft's music instead of
 Portal 2's (off by default). Portal 2's own music is muted wherever Minecraft's plays, and its background sounds
-(machinery, wind, hum) are turned down.
+(machinery, wind, hum) are turned down. Off: Portal 2's own music, and none of Minecraft's while Portal 2 is running
+(switching it off stops Minecraft's track at once).
 - **Portal 2's ambience**: Off, Quiet (the default, about a third as loud), Half or Full.
 - **Minecraft's music** slider: how loud it plays, on top of the Music slider in Minecraft's Music & Sounds settings
-  (default 89%, about 1 dB down).
+  (default 89%, about 1 dB down). If that Music slider is at 0%, nothing of Minecraft's can be heard: the screen then
+  says so in this row, and clicking it sets the slider to 100%.
 - **A rule for each part of the game** (every map, and the finale in three parts: before the fight, Wheatley's fight,
   the moon shot and ending): *Minecraft's music* (the default: Minecraft's own music comes and goes as it does in
   Minecraft, as often as Minecraft's Music Frequency setting says), *Portal 2's own* (that part keeps Portal 2's music),
   or a track of your choice (searchable list of Minecraft's tracks), which plays where Portal 2's music would.
-  Wheatley's fight plays **Pigstep** by default.
+  Wheatley's fight plays **Pigstep** by default. The fight starts with Wheatley's first bombs and lasts until the
+  moon shot, a saved game loaded in the middle of it included.
 - The screen shows what's playing now and which part of the game you're in.
 - The credits song stays muted unless its part is set to *Portal 2's own*; the moon shot's sound mix isn't muted.
 - While Portal 2 loads a map (the next chamber, a reload, a save), Minecraft's music and sounds pause, and carry on
