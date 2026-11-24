@@ -1,4 +1,4 @@
-Note from the human: As one may expect, all of this is AI-generated. Except the textures, I made those myself. But I came up with everything added beyond just Minecraft in Portal 2, and goddamn, did I add a lot more. I even wrote the Cave Johnson books myself. So if you ever wanted to see one of these with some actual creativity, you found the right place.
+Note from the human: As one may expect, all of this is AI-generated. Except the textures, I made those myself. But I came up with everything added beyond just Minecraft in Portal 2, and goddamn, did I add a lot more. I even wrote the Cave Johnson books myself. So if you ever wanted to see one of these with some actual creativity, you found the right place. The rest of this README is AI though, so beware.
 
 # Portalcraft: Minecraft inside Portal 2
 
