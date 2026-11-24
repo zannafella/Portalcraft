@@ -1,10 +1,12 @@
+Note from the human: As one may expect, all of this is AI-generated. Except the textures, I made those myself. But I came up with everything added beyond just Minecraft in Portal 2, and goddamn, did I add a lot more. I even wrote the Cave Johnson books myself. So if you ever wanted to see one of these with some actual creativity, you found the right place.
+
 # Portalcraft: Minecraft inside Portal 2
 
 Real Minecraft Java 26.3 runs next to Portal 2, follows Portal 2's camera, and is drawn into every Portal 2 frame with
 depth: Minecraft blocks and mobs stand on Portal 2's floors, hide behind its walls and stay put while you move. Build
 with Minecraft blocks (Portal 2's player collides with them), fight Minecraft mobs (in survival their hits come out of
 Portal 2's health), and keep using the portal gun. You are Minecraft's player: its size, and it moves the way
-Minecraft's does. Single player only.
+Minecraft's does. Single player only (soon to change).
 
 **To play, download the release zip** (Releases, on the right of the GitHub page), not the source code: unzip it
 anywhere and follow *Install* below. It has the built mod, the add-on and ReShade in it; the source code alone has to be
